@@ -1,0 +1,6 @@
+torch
+stable-baselines3[extra]
+gymnasium[atari]
+ale-py
+opencv-python
+numpy
