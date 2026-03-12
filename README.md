@@ -37,7 +37,7 @@ Training metrics are logged to [Weights & Biases](https://wandb.ai) by default. 
 
 Key arguments:
 
-- `--novelty_reset` — reset the episode visit counter $N_e$ whenever the agent receives extrinsic reward, restoring the intrinsic exploration signal after key pickup
+- `--novelty_reset` — reset the episode visit counter $N_e$ whenever the agent receives extrinsic reward, restoring the intrinsic exploration signal
 - `--skull freeze` — freeze the rolling skull in room 1 via RAM writes so the agent can reach the key easier
 - `--n_envs` — number of parallel environments (default: 8)
 - `--alpha` — NovelD novelty balance coefficient (default: 0.5)
