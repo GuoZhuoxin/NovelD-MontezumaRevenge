@@ -4,7 +4,7 @@ PPO + NovelD intrinsic motivation for exploration in Montezuma's Revenge (Atari)
 
 ## Method
 
-[NovelD](https://arxiv.org/abs/2102.09300) extends RND (Random Network Distillation) by rewarding the agent for moving *toward* novel states rather than simply being in them, and by applying an episode-level first-visit mask to prevent the agent from repeatedly exploiting the same state:
+[NovelD]([https://proceedings.neurips.cc/paper/2021/hash/d428d070622e0f4363fceae11f4a3576-Abstract.html]) extends RND (Random Network Distillation) by rewarding the agent for moving *toward* novel states rather than simply being in them, and by applying an episode-level first-visit mask to prevent the agent from repeatedly exploiting the same state:
 
 $$r^i_t = \max\left(\text{novel}(s_{t+1}) - \alpha \cdot \text{novel}(s_t),\ 0\right) \cdot \mathbf{1}\left[N_e(s_{t+1}) = 1\right]$$
 
