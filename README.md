@@ -2,7 +2,8 @@
 
 PPO + NovelD intrinsic motivation for exploration in Montezuma's Revenge (Atari), built on [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3).
 
-<img src="monitor.png" width="1000"/>      
+<img src="monitor.png" width="1000"/>     
+
 ## Method
 
 [NovelD](https://proceedings.neurips.cc/paper/2021/hash/d428d070622e0f4363fceae11f4a3576-Abstract.html) extends RND (Random Network Distillation) by rewarding the agent for moving *toward* novel states rather than simply being in them, and by applying an episode-level first-visit mask to prevent the agent from repeatedly exploiting the same state:
