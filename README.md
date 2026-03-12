@@ -49,6 +49,7 @@ Key arguments:
 ```bash
 python render.py --model noveld_montezuma.zip ---episodes 5
 ```
+`--model` specifies the path to a trained model checkpoint (`.zip` file saved by `train.py`). The default is `noveld_montezuma.zip`, which is the filename used when no `--save_name` is passed to `train.py`.
 
 ## Project Structure
 
