@@ -1,6 +1,6 @@
 # NovelD on Montezuma's Revenge
 
-PPO + NovelD intrinsic motivation for exploration in Montezuma's Revenge (Atari), built on [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3).
+PPO + NovelD intrinsic motivation for reinforcement learning exploration in Montezuma's Revenge (Atari), built on [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3).
 
 <img src="monitor.png" width="1000"/>     
 
