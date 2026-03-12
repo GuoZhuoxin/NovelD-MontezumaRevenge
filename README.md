@@ -33,7 +33,14 @@ python train.py \
 Add `--monitor` to display a live grid of all training environments.
 Training metrics are logged to [Weights & Biases](https://wandb.ai) by default. Use `--no_wandb` to disable.
 
-Key arguments: `--skull` (`freeze` / `remove` / `normal`), `--novelty_reset` (reset $N_e$ on extrinsic reward), `--n_envs`, `--alpha`, `--beta`, `--rnd_lr`. Run `python train.py --help` for the full list.
+Key arguments:
+
+- `--skull freeze` — freeze the rolling skull in room 1 via RAM writes so the agent can safely reach the key
+- `--novelty_reset` — reset the episode visit counter $N_e$ whenever the agent receives extrinsic reward, restoring the intrinsic exploration signal after key pickup
+- `--n_envs` — number of parallel environments (default: 8)
+- `--alpha` — NovelD novelty balance coefficient (default: 0.5)
+- `--beta` — intrinsic reward scale applied to the normalized novelty signal (default: 0.05)
+- `--rnd_lr` — learning rate for the RND predictor network (default: 1e-4)
 
 ## Evaluation
 
