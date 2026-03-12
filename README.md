@@ -41,6 +41,8 @@ Key arguments:
 - `--alpha` — NovelD novelty balance coefficient (default: 0.5)
 - `--beta` — intrinsic reward scale applied to the normalized novelty signal (default: 0.05)
 - `--rnd_lr` — learning rate for the RND predictor network (default: 1e-4)
+- `--ent_coef` — PPO entropy coefficient; higher values maintain exploration when intrinsic reward decays (default: 0.01)
+- `--batch_size` — PPO minibatch size; should be increased proportionally with `--n_steps` (default: 256)
 
 ## Evaluation
 
