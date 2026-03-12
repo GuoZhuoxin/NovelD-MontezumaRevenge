@@ -47,7 +47,7 @@ Key arguments:
 ## Evaluation
 
 ```bash
-python render.py --model noveld_montezuma.zip --skull freeze --episodes 5
+python render.py --model noveld_montezuma.zip ---episodes 5
 ```
 
 ## Project Structure
