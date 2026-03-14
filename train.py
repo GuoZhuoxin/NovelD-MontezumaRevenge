@@ -234,7 +234,7 @@ class NovelDCallback(BaseCallback):
                     "train/timestep":     self.num_timesteps,
                 }
                 if self.use_wandb:
-                    wandb.log(log, step=self.num_timesteps)
+                    wandb.log(log)
                 if self.verbose:
                     print(f"  [Episode] r_ext={self._ep_r_ext[i]:.1f}  "
                           f"r_int={self._ep_r_int[i]:.3f}  "
@@ -326,6 +326,25 @@ class FreezeSkullWrapper(gym.Wrapper):
 
 
 # -----------------------------------------------------------------------
+# Action space restriction wrapper
+# -----------------------------------------------------------------------
+_ALLOWED_ACTIONS = [0, 1, 2, 3, 4, 5, 10, 11, 12]
+# NOOP(0), FIRE(1), UP(2), RIGHT(3), LEFT(4), DOWN(5),
+# UPFIRE(10), RIGHTFIRE(11), LEFTFIRE(12)
+
+class RestrictedActionWrapper(gym.ActionWrapper):
+    """Maps a reduced action space [0, N) to a fixed subset of the full action space."""
+
+    def __init__(self, env: gym.Env, allowed_actions: list):
+        super().__init__(env)
+        self._allowed = allowed_actions
+        self.action_space = gym.spaces.Discrete(len(allowed_actions))
+
+    def action(self, act):
+        return self._allowed[act]
+
+
+# -----------------------------------------------------------------------
 # Build environment
 # -----------------------------------------------------------------------
 def make_env(n_envs: int, monitor: bool = False, skull: str = "normal"):
@@ -341,6 +360,7 @@ def make_env(n_envs: int, monitor: bool = False, skull: str = "normal"):
             env = FreezeSkullWrapper(env, remove=False)
         elif skull == "remove":
             env = FreezeSkullWrapper(env, remove=True)
+        env = RestrictedActionWrapper(env, _ALLOWED_ACTIONS)
         env = AtariWrapper(env)  # EpisodicLifeEnv, NoopReset, MaxAndSkip, etc.
         return env
 
