@@ -46,6 +46,7 @@ def parse_args():
 
     # RND
     parser.add_argument("--rnd_lr",    type=float, default=config.RND_LR,          help="RND predictor learning rate")
+    parser.add_argument("--reward_norm_clip", type=float, default=None,            help="Clip upper bound for normalized r_int (default=5.0; 0=no clip)")
 
     # Misc
     parser.add_argument("--early_stop_window",    type=int,   default=0,     help="Stop if r_int is 0 for this many consecutive episodes (0=disabled)")
@@ -58,6 +59,7 @@ def parse_args():
     parser.add_argument("--novelty_reset",   action="store_true",        help="Reset episode novelty counter when external reward > 0 (re-incentivises exploration after key pickup)")
     parser.add_argument("--r_pos_global",    action="store_true",        help="Give r_pos only for cells never visited in training (stronger exploration signal)")
     parser.add_argument("--monitor",         action="store_true",        help="Show live training monitor window (requires opencv-python)")
+    parser.add_argument("--full_episode",    action="store_true",        help="Treat all 5 lives as one episode (disable EpisodicLifeEnv)")
     parser.add_argument("--skull", type=str, default="normal",
                         choices=["normal", "freeze", "remove"],
                         help="Skull behaviour: normal / freeze (hold position) / remove (move off-screen)")
@@ -85,9 +87,10 @@ class NovelDWrapper(VecEnvWrapper):
     """
 
     def __init__(self, venv: VecEnv, device: torch.device, r_pos: float = 0.0,
-                 novelty_reset: bool = False, r_pos_global: bool = False):
+                 novelty_reset: bool = False, r_pos_global: bool = False,
+                 reward_norm_clip: float = None):
         super().__init__(venv)
-        self.noveld         = NovelDReward(venv.num_envs, device)
+        self.noveld         = NovelDReward(venv.num_envs, device, reward_norm_clip=reward_norm_clip)
         self._last_obs      = None
         self._r_pos         = r_pos
         self._novelty_reset = novelty_reset
@@ -194,6 +197,12 @@ class NovelDCallback(BaseCallback):
         self._window_best_r_ext   = -float("inf")
         self._last_window_end     = 0
 
+        # Periodic wandb log: upload every N steps even without episode end
+        self._log_freq            = 10_000
+        self._last_log_step       = 0
+        self._recent_r_int_step   = deque(maxlen=50)
+        self._recent_r_ext_step   = deque(maxlen=50)
+
     def _on_step(self) -> bool:
         infos = self.locals.get("infos", [])
         n_envs = len(infos)
@@ -221,6 +230,9 @@ class NovelDCallback(BaseCallback):
                 ep            = info["episode"]
                 ep_rooms      = len(self._ep_rooms[i])
                 total_rooms   = len(self._all_rooms[i])
+
+                self._recent_r_ext_step.append(self._ep_r_ext[i])
+                self._recent_r_int_step.append(self._ep_r_int[i])
 
                 log = {
                     "episode/r_ext":      self._ep_r_ext[i],
@@ -283,6 +295,18 @@ class NovelDCallback(BaseCallback):
                 self._ep_r_int[i] = 0.0
                 self._ep_r_pos[i] = 0.0
                 self._ep_rooms[i] = set()
+
+        # Periodic wandb log every _log_freq steps
+        if (self.use_wandb
+                and self.num_timesteps - self._last_log_step >= self._log_freq
+                and len(self._recent_r_ext_step) > 0):
+            wandb.log({
+                "train/timestep":          self.num_timesteps,
+                "train/mean_r_ext":        sum(self._recent_r_ext_step) / len(self._recent_r_ext_step),
+                "train/mean_r_int":        sum(self._recent_r_int_step) / len(self._recent_r_int_step),
+            })
+            self._last_log_step = self.num_timesteps
+
         return True
 
 
@@ -347,7 +371,7 @@ class RestrictedActionWrapper(gym.ActionWrapper):
 # -----------------------------------------------------------------------
 # Build environment
 # -----------------------------------------------------------------------
-def make_env(n_envs: int, monitor: bool = False, skull: str = "normal"):
+def make_env(n_envs: int, monitor: bool = False, skull: str = "normal", full_episode: bool = False):
     """Create vectorized + frame-stacked Atari env (5 lives, EpisodicLifeEnv).
 
     skull: "normal" | "freeze" | "remove"
@@ -361,7 +385,7 @@ def make_env(n_envs: int, monitor: bool = False, skull: str = "normal"):
         elif skull == "remove":
             env = FreezeSkullWrapper(env, remove=True)
         env = RestrictedActionWrapper(env, _ALLOWED_ACTIONS)
-        env = AtariWrapper(env)  # EpisodicLifeEnv, NoopReset, MaxAndSkip, etc.
+        env = AtariWrapper(env, terminal_on_life_loss=not full_episode)  # EpisodicLifeEnv, NoopReset, MaxAndSkip, etc.
         return env
 
     env = make_vec_env(_init, n_envs=n_envs, seed=0)
@@ -467,13 +491,22 @@ def main():
             config=vars(args),   # logs all hyperparams automatically
             sync_tensorboard=False,
         )
+        # Use actual training timestep as x-axis for all custom metrics
+        wandb.define_metric("train/timestep")
+        wandb.define_metric("episode/*", step_metric="train/timestep")
+        wandb.define_metric("train/total_rooms", step_metric="train/timestep")
+        wandb.define_metric("train/total_cells", step_metric="train/timestep")
+        wandb.define_metric("train/best_mean_r_ext", step_metric="train/timestep")
         print(f"WandB run: {run.url}\n")
 
     # Build env
-    env = make_env(args.n_envs, monitor=args.monitor, skull=args.skull)
+    env = make_env(args.n_envs, monitor=args.monitor, skull=args.skull, full_episode=args.full_episode)
+    clip_val = np.inf if (args.reward_norm_clip is not None and args.reward_norm_clip == 0) \
+               else args.reward_norm_clip
     env = NovelDWrapper(env, device, r_pos=args.r_pos,
                         novelty_reset=args.novelty_reset,
-                        r_pos_global=args.r_pos_global)
+                        r_pos_global=args.r_pos_global,
+                        reward_norm_clip=clip_val)
 
     # PPO
     model = PPO(

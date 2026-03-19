@@ -62,11 +62,12 @@ class NovelDReward:
         noveld.update_rnd(obs_t1)   # update predictor
     """
 
-    def __init__(self, n_envs: int, device: torch.device):
+    def __init__(self, n_envs: int, device: torch.device, reward_norm_clip: float = None):
         self.n_envs  = n_envs
         self.rnd     = RNDModel(device)
         self.counter = EpisodeCounter(n_envs)
         self.reward_rms = RunningMeanStd()
+        self._reward_norm_clip = reward_norm_clip if reward_norm_clip is not None else REWARD_NORM_CLIP
 
         # Cache novelty of s_t to avoid recomputing
         self._prev_novelty = np.zeros(n_envs, dtype=np.float32)
@@ -136,7 +137,7 @@ class NovelDReward:
             self.reward_rms.update(nonzero)
         normalized = self.reward_rms.normalize(raw_r_int)
         normalized = np.where(nonzero_mask, normalized, 0.0)  # zero stays zero
-        r_int = np.clip(normalized, 0.0, REWARD_NORM_CLIP)    # r_int always >= 0
+        r_int = np.clip(normalized, 0.0, self._reward_norm_clip)    # r_int always >= 0
         r_int = (BETA * r_int).astype(np.float32)
 
         # Update cache for next step; reset on episode end
