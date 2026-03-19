@@ -21,15 +21,7 @@ Requires Python 3.8+. A CUDA-capable GPU is recommended.
 ## Training
 
 ```bash
-python train.py \
-  --skull freeze \
-  --timesteps 500000000 \
-  --novelty_reset \
-  --n_envs 10 \
-  --ent_coef 0.05 \
-  --rnd_lr 1e-5 \
-  --n_steps 512 \
-  --batch_size 512
+python train.py --skull freeze --timesteps 500000000 --novelty_reset --n_envs 10 --ent_coef 0.05 --rnd_lr 1e-5 --n_steps 512 --batch_size 512 --beta 0.15 --reward_norm_clip 0 --full_episode
 ```
 
 Add `--monitor` to display a live grid of all training environments.
