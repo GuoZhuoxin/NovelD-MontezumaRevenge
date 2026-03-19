@@ -16,8 +16,6 @@ $$r^i_t = \max\left(\text{novel}(s_{t+1}) - \alpha \cdot \text{novel}(s_t),\ 0\r
 pip install -r requirements.txt
 ```
 
-Requires Python 3.8+. A CUDA-capable GPU is recommended.
-
 ## Training
 
 ```bash
